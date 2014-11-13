@@ -16,19 +16,19 @@ STACK_ID=$3
 INSTANCES_JSON=/var/tmp/ospworks_status_${STACK_ID}.json
 FAILED_INSTANCES=/var/tmp/ospworks_status_${STACK_ID}
 
-if [ ! -x /usr/bin/aws ]
+if [ ! $(which aws) ]
 then
-        echo "SERVICE STATUS: Unknown, AWS CLI not installed"
+        echo "SERVICE STATUS: Unknown, AWS CLI not installed or not found on path"
         exit 3
 fi
 
-if [ ! -x /usr/bin/jq ]
+if [ ! $(which jq) ]
 then
-        echo "SERVICE STATUS: Unknown, jq not installed"
+        echo "SERVICE STATUS: Unknown, jq not installed or not found on path"
         exit 3
 fi
 
-/usr/bin/aws opsworks --region=us-east-1 describe-instances --stack-id $STACK_ID > ${INSTANCES_JSON}  2>/dev/null
+aws opsworks --region=us-east-1 describe-instances --stack-id $STACK_ID > ${INSTANCES_JSON}  2>/dev/null
 
 if [ $? -gt 0 ]
 then
@@ -36,7 +36,7 @@ then
 	exit 3
 fi
 
-/usr/bin/jq ".Instances[] | select (.Status == \"setup_failed\").Hostname" < ${INSTANCES_JSON} > ${FAILED_INSTANCES}
+jq ".Instances[] | select (.Status == \"setup_failed\").Hostname" < ${INSTANCES_JSON} > ${FAILED_INSTANCES}
 failed_hosts=`cat $FAILED_INSTANCES | sed 's/"//g' | awk 'BEGIN { ORS="," } { print $1 }'`
 fail_host_count=`wc -l $FAILED_INSTANCES | awk '{ print $1 }'`
 
