@@ -13,8 +13,8 @@ THRESHOLD=2
 
 STACK_ID=$3
 
-INSTANCES_JSON=/var/tmp/ospworks_status_${STACK_ID}.json
-FAILED_INSTANCES=/var/tmp/ospworks_status_${STACK_ID}
+INSTANCES_JSON=/var/tmp/opsworks_status_${STACK_ID}.json
+FAILED_INSTANCES=/var/tmp/opsworks_status_${STACK_ID}
 
 if [ ! $(which aws) ]
 then
