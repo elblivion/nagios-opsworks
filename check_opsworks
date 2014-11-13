@@ -28,7 +28,7 @@ then
         exit 3
 fi
 
-aws opsworks --region=us-east-1 describe-instances --stack-id $STACK_ID > ${INSTANCES_JSON}  2>/dev/null
+aws opsworks describe-instances --stack-id $STACK_ID > ${INSTANCES_JSON}  2>/dev/null
 
 if [ $? -gt 0 ]
 then
