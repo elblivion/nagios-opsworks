@@ -1,0 +1,60 @@
+#!/bin/bash
+
+export LC_CTYPE="C"
+export AWS_DEFAULT_REGION="eu-west-1"
+export AWS_ACCESS_KEY_ID=$1
+export AWS_SECRET_ACCESS_KEY=$2
+
+THRESHOLD=2
+
+#Stack not found: 255
+#unauthorized: 255
+#success: 0
+
+STACK_ID=$3
+
+INSTANCES_JSON=/var/tmp/ospworks_status_${STACK_ID}.json
+FAILED_INSTANCES=/var/tmp/ospworks_status_${STACK_ID}
+
+if [ ! -x /usr/bin/aws ]
+then
+        echo "SERVICE STATUS: Unknown, AWS CLI not installed"
+        exit 3
+fi
+
+if [ ! -x /usr/bin/jq ]
+then
+        echo "SERVICE STATUS: Unknown, jq not installed"
+        exit 3
+fi
+
+/usr/bin/aws opsworks --region=us-east-1 describe-instances --stack-id $STACK_ID > ${INSTANCES_JSON}  2>/dev/null
+
+if [ $? -gt 0 ]
+then
+	echo "SERVICE STATUS: Unknown, unable to get OpsWorks stack information"
+	exit 3
+fi
+
+/usr/bin/jq ".Instances[] | select (.Status == \"setup_failed\").Hostname" < ${INSTANCES_JSON} > ${FAILED_INSTANCES}
+failed_hosts=`cat $FAILED_INSTANCES | sed 's/"//g' | awk 'BEGIN { ORS="," } { print $1 }'`
+fail_host_count=`wc -l $FAILED_INSTANCES | awk '{ print $1 }'`
+
+if [ "$failed_hosts" == "" ]
+then
+	RETCODE=0
+	MESSAGE="SERVICE STATUS: OK - no instances failed setup."
+else
+	RETCODE=1
+	SEVERITY='WARNING'
+	if [ $fail_host_count -gt $THRESHOLD ]
+	then
+		RETCODE=2
+		SEVERITY='CRITICAL'
+	fi
+
+	MESSAGE="SERVICE STATUS: ${SEVERITY}: ${fail_host_count} host(s) have failed setup (${failed_hosts}) "
+fi
+
+echo $MESSAGE
+exit $RETCODE
